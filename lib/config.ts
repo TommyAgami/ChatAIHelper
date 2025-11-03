@@ -15,7 +15,7 @@ export const STARTER_PROMPTS: StartScreenPrompt[] = [
 
 export const PLACEHOLDER_INPUT = "אני כאן לכל שאלה...";
 
-export const GREETING = "מה תרצו לדעת??";
+export const GREETING = "מה תרצו לדעת?";
 
 export const getThemeConfig = (theme: ColorScheme): ThemeOption => ({
   color: {
