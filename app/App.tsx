@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback } from "react";
-import { ChatKitPanel } from "@/components/ChatKitPanel";
+import { ChatKitPanel, type FactAction } from "@/components/ChatKitPanel";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function App() {
-  const { scheme } = useColorScheme();
+  const { scheme, setScheme } = useColorScheme();
 
-  const handleResponseEnd = useCallback(() => {
-    // You may log or trigger something when AI finishes responding
+  const handleWidgetAction = useCallback(async (_action: FactAction) => {
+    // Optional: Save captured "facts" into DB / CRM etc.
   }, []);
 
   return (
@@ -16,7 +16,9 @@ export default function App() {
       <div className="mx-auto w-full max-w-5xl">
         <ChatKitPanel
           theme={scheme}
-          onResponseEnd={handleResponseEnd}
+          onWidgetAction={handleWidgetAction}
+          onResponseEnd={() => {}}
+          onThemeRequest={setScheme}
         />
       </div>
     </main>
