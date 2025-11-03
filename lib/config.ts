@@ -26,9 +26,9 @@ export const GREETING = "AI מדפורם";
 export const getThemeConfig = (theme: ColorScheme): ThemeOption => ({
   color: {
     grayscale: {
-      hue: 204,
+      hue: 210,
       tint: 2,
-      shade: 1,
+      shade: 0,
     },
     accent: {
       primary: "#262f5a", // Medform Navy
