@@ -11,6 +11,11 @@ export const STARTER_PROMPTS: StartScreenPrompt[] = [
     prompt: "מה הפיצ'רים הבולטים שלכם?",
     icon: "circle-question",
   },
+  {
+   label: "מעוניין/ת בהדגמה?",
+    prompt: "שלום אפשר לקבוע הדגמה?",
+    icon: "circle-question",
+  },
 ];
 
 export const PLACEHOLDER_INPUT = "אני כאן לכל שאלה...";
