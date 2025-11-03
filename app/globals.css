@@ -35,10 +35,11 @@
     font-family: var(--font-sans);
   }
 }
-/* Hebrew RTL auto-detection 03.11.2025 20:22*/
+/* Hebrew RTL auto-detection */
 [data-chatkit-container] .message span,
 [data-chatkit-container] .message p,
 [data-chatkit-container] textarea {
   direction: auto !important;
   unicode-bidi: plaintext !important;
 }
+
