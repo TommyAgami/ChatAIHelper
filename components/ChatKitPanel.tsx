@@ -124,10 +124,8 @@ export function ChatKitPanel({
   onThemeRequest,
 }: ChatKitPanelProps) {
 
-  // ✅ Add conversation flow states FIRST
-  const [detectedName, setDetectedName] = useState<string | null>(null);
-  const [detectedPhone, setDetectedPhone] = useState<string | null>(null);
-  const [leadSent, setLeadSent] = useState(false);
+  // The lead capture states (detectedName, detectedPhone, leadSent) are removed
+  // as the Agent's function calling logic replaces the manual parsing.
 
   // ✅ Existing states remain unchanged
   const processedFacts = useRef(new Set<string>());
@@ -363,55 +361,28 @@ export function ChatKitPanel({
     threadItemActions: {
       feedback: false,
     },
+    // 🔥 CORRECTED: Single, unified onClientTool handler
     onClientTool: async (invocation: {
       name: string;
       params: Record<string, unknown>;
     }) => {
-      // Inside export function ChatKitPanel(...) { ...
-// Inside the const chatkit = useChatKit({ ...
 
-onClientTool: async (invocation: {
-  name: string;
-  params: Record<string, unknown>;
-}) => {
+      // 1. LEAD CAPTURE TOOL (New Logic)
+      if (invocation.name === "send_lead_to_make") {
+        const { name, phone, specialty } = invocation.params;
 
-  // ✅ Simplified Logic for handling the lead capture function call from the Agent
-  if (invocation.name === "send_lead_to_make") {
-    
-    // 1. Extract the parameters that the Agent passed
-    const { name, phone, specialty } = invocation.params;
+        if (name && phone && specialty) {
+          void sendLeadToMake({
+            name: String(name),
+            phone: String(phone),
+            specialty: String(specialty),
+          });
+          return { success: true }; 
+        }
+        return { success: false }; 
+      }
 
-    // 2. Simple validation (ensure all required fields are present)
-    if (name && phone && specialty) {
-      // 3. Call your existing webhook function (make sure to cast to string)
-      void sendLeadToMake({
-        name: String(name),
-        phone: String(phone),
-        specialty: String(specialty),
-      });
-
-      // 4. Return ONLY success: true. The Agent will use this result 
-      //    to generate its own text reply to the user.
-      return { success: true }; 
-    }
-
-    // 5. If data is incomplete, return failure. The Agent may ask for the missing info.
-    return { success: false }; 
-  }
-  
-  // ⬅️ Your existing switch_theme logic remains here...
-  if (invocation.name === "switch_theme") {
-    // ... (rest of your switch_theme logic) ...
-  }
-
-  if (invocation.name === "record_fact") {
-    // ... (rest of your record_fact logic) ...
-  }
-  
-  // Default return if no known function was called
-  return { success: false };
-},
-// ... rest of useChatKit configuration
+      // 2. SWITCH THEME TOOL (Existing Logic)
       if (invocation.name === "switch_theme") {
         const requested = invocation.params.theme;
         if (requested === "light" || requested === "dark") {
@@ -424,6 +395,7 @@ onClientTool: async (invocation: {
         return { success: false };
       }
 
+      // 3. RECORD FACT TOOL (Existing Logic)
       if (invocation.name === "record_fact") {
         const id = String(invocation.params.fact_id ?? "");
         const text = String(invocation.params.fact_text ?? "");
@@ -439,8 +411,11 @@ onClientTool: async (invocation: {
         return { success: true };
       }
 
+      // Default return if no known function was called
       return { success: false };
     },
+    // End of onClientTool
+    
     onResponseEnd: () => {
       onResponseEnd();
     },
@@ -457,52 +432,7 @@ onClientTool: async (invocation: {
     },
   });
 
-  // ✅ Lead Capture Effect 
-  useEffect(() => {
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    // ⚠️ BLOCK SUPPRESSION: Required because 'thread' and 'm: any' are not in the public ChatKitControl type.
-    const msgs = (chatkit?.control as any)?.thread?.messages; 
-    
-    if (!msgs || msgs.length === 0) return;
-
-    const lastUserMessage = [...msgs]
-      .reverse()
-      .find((m: any) => m?.role === "user" && typeof m.content === "string");
-    /* eslint-enable @typescript-eslint/no-explicit-any */
-
-    if (!lastUserMessage) return;
-
-    const text = lastUserMessage.content as string;
-
-    if (!detectedName) {
-      const name = detectName(text);
-      if (name) {
-        setDetectedName(name);
-        return;
-      }
-    }
-
-    if (detectedName && !detectedPhone) {
-      const phone = detectPhone(text);
-      if (phone) {
-        setDetectedPhone(phone);
-        return;
-      }
-    }
-
-    if (detectedName && detectedPhone && !leadSent) {
-      const specialty = detectSpecialty(text);
-      if (specialty) {
-        sendLeadToMake({
-          name: detectedName,
-          phone: detectedPhone,
-          specialty,
-        });
-        setLeadSent(true);
-        console.log("✅ Lead Sent", { detectedName, detectedPhone, specialty });
-      }
-    }
-  }, [chatkit.control, detectedName, detectedPhone, leadSent]); 
+  // 🗑️ The old manual lead capture useEffect has been removed!
 
   //-------------------lead capture effect------------//
   const activeError = errors.session ?? errors.integration;
