@@ -66,33 +66,47 @@ export function ChatKitPanel({
     setErrors((current) => ({ ...current, ...updates }));
   }, []);
 //------------ATTEMPT TO ADD RIGHT ALIGN (FIXED)-----
-useEffect(() => {
-  const observer = new MutationObserver(() => {
-    const chatEl = document.querySelector(
-      '[data-chatkit-root], openai-chatkit, .chat-root'
-    ) as HTMLElement | null;
+import { useEffect } from "react";
 
-    if (chatEl) {
-      chatEl.style.textAlign = "right";
+export default function ChatKitPanel() {
 
-      const input = chatEl.querySelector("input, textarea") as
-        | HTMLInputElement
-        | HTMLTextAreaElement
-        | null;
+  useEffect(() => {
+    if (typeof window === "undefined") return; // ✅ SSR-safe
 
-      if (input) {
-        input.style.textAlign = "right";
-      }
-    }
-  });
+    const align = () => {
+      const host = document.querySelector("openai-chat, openai-chatkit") as HTMLElement | null;
+      if (!host) return;
 
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-  });
+      host.style.direction = "rtl";
+      host.style.textAlign = "right";
 
-  return () => observer.disconnect();
-}, []);
+      // ✅ shadow-safe text input fix
+      const inputs = host.querySelectorAll("input, textarea");
+      inputs.forEach((el) => {
+        (el as HTMLInputElement | HTMLTextAreaElement).style.direction = "rtl";
+        (el as HTMLInputElement | HTMLTextAreaElement).style.textAlign = "right";
+      });
+    };
+
+    // Run once on mount
+    align();
+
+    // ✅ Observe only ChatKit root (efficient & safe)
+    const host = document.querySelector("openai-chat, openai-chatkit");
+    if (!host) return;
+
+    const observer = new MutationObserver(align);
+    observer.observe(host, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    // ✅ your existing return UI goes here
+    // Example:
+    <div className="chat-container"></div>
+  );
+}
 //-------------END OF SECTION------
   observer.observe(document.body, { childList: true, subtree: true });
   return () => observer.disconnect();
