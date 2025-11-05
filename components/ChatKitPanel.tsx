@@ -367,6 +367,51 @@ export function ChatKitPanel({
       name: string;
       params: Record<string, unknown>;
     }) => {
+      // Inside export function ChatKitPanel(...) { ...
+// Inside the const chatkit = useChatKit({ ...
+
+onClientTool: async (invocation: {
+  name: string;
+  params: Record<string, unknown>;
+}) => {
+
+  // ✅ Simplified Logic for handling the lead capture function call from the Agent
+  if (invocation.name === "send_lead_to_make") {
+    
+    // 1. Extract the parameters that the Agent passed
+    const { name, phone, specialty } = invocation.params;
+
+    // 2. Simple validation (ensure all required fields are present)
+    if (name && phone && specialty) {
+      // 3. Call your existing webhook function (make sure to cast to string)
+      void sendLeadToMake({
+        name: String(name),
+        phone: String(phone),
+        specialty: String(specialty),
+      });
+
+      // 4. Return ONLY success: true. The Agent will use this result 
+      //    to generate its own text reply to the user.
+      return { success: true }; 
+    }
+
+    // 5. If data is incomplete, return failure. The Agent may ask for the missing info.
+    return { success: false }; 
+  }
+  
+  // ⬅️ Your existing switch_theme logic remains here...
+  if (invocation.name === "switch_theme") {
+    // ... (rest of your switch_theme logic) ...
+  }
+
+  if (invocation.name === "record_fact") {
+    // ... (rest of your record_fact logic) ...
+  }
+  
+  // Default return if no known function was called
+  return { success: false };
+},
+// ... rest of useChatKit configuration
       if (invocation.name === "switch_theme") {
         const requested = invocation.params.theme;
         if (requested === "light" || requested === "dark") {
