@@ -10,7 +10,7 @@ import {
   WORKFLOW_ID,
   getThemeConfig,
 } from "@/lib/config";
-import { ErrorOverlay } from "./ErrorOverlay";
+import { ErrorOverlay } from "../ErrorOverlay"; // <-- Corrected import path
 import type { ColorScheme } from "@/hooks/useColorScheme";
 
 export type FactAction = {
@@ -62,7 +62,6 @@ export function ChatKitPanel({
   );
   const [widgetInstanceKey, setWidgetInstanceKey] = useState(0);
 
-  // Correct the type definition for the ref to allow for null.
   const chatKitRef = useRef<HTMLDivElement | null>(null);
 
   const setErrorState = useCallback((updates: Partial<ErrorState>) => {
@@ -329,7 +328,6 @@ export function ChatKitPanel({
   const { options, clientSecret } = chatkit;
 
   return (
-    // Attach the ref to the parent div of the ChatKit component.
     <div ref={chatKitRef} style={{ height: "100%" }}>
       {scriptStatus === "ready" && clientSecret && options.workflow?.id ? (
         <ChatKit key={widgetInstanceKey} options={options} />
