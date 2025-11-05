@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChatKit, useChatKit } from "@openai/chatkit-react";
+// Assuming the import is correct based on your setup
+import { ChatKit, useChatKit } from "@openai/chatkit-react"; 
 import { sendLeadToMake } from "@/lib/sendLeadToMake";
 import {
   STARTER_PROMPTS,
@@ -43,6 +44,80 @@ const createInitialErrors = (): ErrorState => ({
   integration: null,
   retryable: false,
 });
+
+// 🛠️ CORRECTED: Utility functions moved OUTSIDE of the component for proper scoping and syntax.
+// You must define these helper functions before they are used, or outside of the component function.
+
+function detectName(text: string): string | null {
+  // Name = letters (Hebrew/English), 1–3 words, no digits
+  if (/^[A-Za-z\u0590-\u05FF]{2,}(?: [A-Za-z\u0590-\u05FF]{2,}){0,2}$/.test(text)) {
+    return text.trim();
+  }
+  return null;
+}
+
+function detectPhone(text: string): string | null {
+  // Finds a 9 or 10 digit number possibly prefixed with 972 or 0, ignoring other characters
+  const match = text.replace(/\D/g, "").match(/(?:972|0)?([0-9]{8,10})/); 
+  return match ? match[1] : null; // Returning match[1] to get the main number part (8-10 digits)
+}
+
+function detectSpecialty(text: string): string | null {
+  // Any meaningful text after name + phone is considered specialty
+  return text.length > 1 ? text.trim() : null;
+}
+
+function extractErrorDetail(
+  payload: Record<string, unknown> | undefined,
+  fallback: string
+): string {
+  if (!payload) {
+    return fallback;
+  }
+
+  const error = payload.error;
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+
+  const details = payload.details;
+  if (typeof details === "string") {
+    return details;
+  }
+
+  if (details && typeof details === "object" && "error" in details) {
+    const nestedError = (details as { error?: unknown }).error;
+    if (typeof nestedError === "string") {
+      return nestedError;
+    }
+    if (
+      nestedError &&
+      typeof nestedError === "object" &&
+      "message" in nestedError &&
+      typeof (nestedError as { message?: unknown }).message === "string"
+    ) {
+      return (nestedError as { message: string }).message;
+    }
+  }
+  if (typeof payload.message === "string") {
+    return payload.message;
+  }
+
+  return fallback;
+}
+
+// -------------------------------------------------------------
+// Component Definition
+// -------------------------------------------------------------
 
 export function ChatKitPanel({
   theme,
@@ -233,6 +308,7 @@ export function ChatKitPanel({
         }
 
         if (!response.ok) {
+          // ⚠️ extractErrorDetail is now correctly available
           const detail = extractErrorDetail(data, response.statusText);
           console.error("Create session request failed", {
             status: response.status,
@@ -338,52 +414,54 @@ export function ChatKitPanel({
       console.error("ChatKit error", error);
     },
   });
-  // ✅ Add this *right here lead capture begin
-// ✅ Lead Capture Effect (correct for your ChatKit version)
-// ✅ Lead Capture Effect (final correct version for your ChatKit build)
-useEffect(() => {
-  const msgs = chatkit?.control?.thread?.messages;
-  if (!msgs || msgs.length === 0) return;
 
-  const lastUserMessage = [...msgs]
-    .reverse()
-    .find((m) => m?.role === "user" && typeof m.content === "string");
+  // ✅ Lead Capture Effect
+  useEffect(() => {
+    const msgs = chatkit?.control?.thread?.messages;
+    if (!msgs || msgs.length === 0) return;
 
-  if (!lastUserMessage) return;
+    const lastUserMessage = [...msgs]
+      .reverse()
+      .find((m) => m?.role === "user" && typeof m.content === "string");
 
-  const text = lastUserMessage.content.trim();
+    if (!lastUserMessage) return;
 
-  if (!detectedName) {
-    const name = detectName(text);
-    if (name) {
-      setDetectedName(name);
-      return;
+    const text = lastUserMessage.content as string;
+
+    if (!detectedName) {
+      // ⚠️ detectName is now correctly available
+      const name = detectName(text);
+      if (name) {
+        setDetectedName(name);
+        return;
+      }
     }
-  }
 
-  if (detectedName && !detectedPhone) {
-    const phone = detectPhone(text);
-    if (phone) {
-      setDetectedPhone(phone);
-      return;
+    if (detectedName && !detectedPhone) {
+      // ⚠️ detectPhone is now correctly available
+      const phone = detectPhone(text);
+      if (phone) {
+        setDetectedPhone(phone);
+        return;
+      }
     }
-  }
 
-  if (detectedName && detectedPhone && !leadSent) {
-    const specialty = detectSpecialty(text);
-    if (specialty) {
-      sendLeadToMake({
-        name: detectedName,
-        phone: detectedPhone,
-        specialty,
-      });
-      setLeadSent(true);
-      console.log("✅ Lead Sent", { detectedName, detectedPhone, specialty });
+    if (detectedName && detectedPhone && !leadSent) {
+      // ⚠️ detectSpecialty is now correctly available
+      const specialty = detectSpecialty(text);
+      if (specialty) {
+        sendLeadToMake({
+          name: detectedName,
+          phone: detectedPhone,
+          specialty,
+        });
+        setLeadSent(true);
+        console.log("✅ Lead Sent", { detectedName, detectedPhone, specialty });
+      }
     }
-  }
-}, [chatkit.control?.thread?.messages, detectedName, detectedPhone, leadSent]);
+  }, [chatkit.control?.thread?.messages, detectedName, detectedPhone, leadSent]);
 
-//-------------------lead capture effect------------//
+  //-------------------lead capture effect------------//
   const activeError = errors.session ?? errors.integration;
   const blockingError = errors.script ?? activeError;
 
@@ -420,71 +498,4 @@ useEffect(() => {
       />
     </div>
   );
-  // catch Name phone and clinic type//
-function detectName(text: string): string | null {
-  // Name = letters (Hebrew/English), 1–3 words, no digits
-  if (/^[A-Za-z\u0590-\u05FF]{2,}(?: [A-Za-z\u0590-\u05FF]{2,}){0,2}$/.test(text)) {
-    return text.trim();
-  }
-  return null;
 }
-
-function detectPhone(text: string): string | null {
-  const match = text.replace(/\D/g, "").match(/(?:972|0)([0-9]{8,9})/);
-  return match ? match[0] : null;
-}
-
-function detectSpecialty(text: string): string | null {
-  // Any meaningful text after name + phone is considered specialty
-  return text.length > 1 ? text.trim() : null;
-}
-  // finish here
-function extractErrorDetail(
-  payload: Record<string, unknown> | undefined,
-  fallback: string
-): string {
-  if (!payload) {
-    return fallback;
-  }
-
-  const error = payload.error;
-  if (typeof error === "string") {
-    return error;
-  }
-
-  if (
-    error &&
-    typeof error === "object" &&
-    "message" in error &&
-    typeof (error as { message?: unknown }).message === "string"
-  ) {
-    return (error as { message: string }).message;
-  }
-
-  const details = payload.details;
- 	if (typeof details === "string") {
-    return details;
-  }
-
-  if (details && typeof details === "object" && "error" in details) {
-    const nestedError = (details as { error?: unknown }).error;
-    if (typeof nestedError === "string") {
-      return nestedError;
-    }
-    if (
-      nestedError &&
-      typeof nestedError === "object" &&
-      "message" in nestedError &&
-      typeof (nestedError as { message?: unknown }).message === "string"
-    ) {
-      return (nestedError as { message: string }).message;
-    }
-  }
-  if (typeof payload.message === "string") {
-    return payload.message;
-  }
-
-  return fallback;
-}
-
-} // ✅ closes ChatKitPanel component
