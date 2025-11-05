@@ -65,52 +65,7 @@ export function ChatKitPanel({
   const setErrorState = useCallback((updates: Partial<ErrorState>) => {
     setErrors((current) => ({ ...current, ...updates }));
   }, []);
-//------------ATTEMPT TO ADD RIGHT ALIGN (FIXED)-----
-import { useEffect } from "react";
 
-export default function ChatKitPanel() {
-
-  useEffect(() => {
-    if (typeof window === "undefined") return; // ✅ SSR-safe
-
-    const align = () => {
-      const host = document.querySelector("openai-chat, openai-chatkit") as HTMLElement | null;
-      if (!host) return;
-
-      host.style.direction = "rtl";
-      host.style.textAlign = "right";
-
-      // ✅ shadow-safe text input fix
-      const inputs = host.querySelectorAll("input, textarea");
-      inputs.forEach((el) => {
-        (el as HTMLInputElement | HTMLTextAreaElement).style.direction = "rtl";
-        (el as HTMLInputElement | HTMLTextAreaElement).style.textAlign = "right";
-      });
-    };
-
-    // Run once on mount
-    align();
-
-    // ✅ Observe only ChatKit root (efficient & safe)
-    const host = document.querySelector("openai-chat, openai-chatkit");
-    if (!host) return;
-
-    const observer = new MutationObserver(align);
-    observer.observe(host, { childList: true, subtree: true });
-
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    // ✅ your existing return UI goes here
-    // Example:
-    <div className="chat-container"></div>
-  );
-}
-//-------------END OF SECTION------
-  observer.observe(document.body, { childList: true, subtree: true });
-  return () => observer.disconnect();
-}, []);
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
@@ -375,6 +330,49 @@ export default function ChatKitPanel() {
     },
   });
 
+  /** ─────────────────────────────────────────────────────────────
+   *  RTL ALIGN BLOCK (safe for ChatKit web component + SSR)
+   *  ────────────────────────────────────────────────────────────*/
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const apply = () => {
+      const host =
+        (document.querySelector("openai-chatkit") as HTMLElement | null) ||
+        (document.querySelector("openai-chat") as HTMLElement | null);
+
+      if (!host) return;
+
+      // make host RTL + right aligned
+      host.setAttribute("dir", "rtl");
+      host.style.direction = "rtl";
+      host.style.textAlign = "right";
+
+      // align any visible inputs/textareas within host light DOM
+      const inputs = host.querySelectorAll("input, textarea");
+      inputs.forEach((el) => {
+        (el as HTMLInputElement | HTMLTextAreaElement).style.direction = "rtl";
+        (el as HTMLInputElement | HTMLTextAreaElement).style.textAlign = "right";
+      });
+    };
+
+    // run once
+    apply();
+
+    // observe ONLY the chat host for dynamic updates
+    const hostNode =
+      document.querySelector("openai-chatkit") ||
+      document.querySelector("openai-chat");
+
+    if (!hostNode) return;
+
+    const mo = new MutationObserver(() => apply());
+    mo.observe(hostNode, { childList: true, subtree: true });
+
+    return () => mo.disconnect();
+  }, []);
+  /** ─────────────────────────────────────────────────────────── */
+
   const activeError = errors.session ?? errors.integration;
   const blockingError = errors.script ?? activeError;
 
@@ -389,7 +387,11 @@ export default function ChatKitPanel() {
   }
 
   return (
-    <div className="relative pb-8 flex h-[90vh] w-full rounded-2xl flex-col overflow-hidden bg-white shadow-sm transition-colors dark:bg-slate-900">
+    <div
+      className="relative pb-8 flex h-[90vh] w-full rounded-2xl flex-col overflow-hidden bg-white shadow-sm transition-colors dark:bg-slate-900"
+      dir="rtl"
+      style={{ textAlign: "right" }}
+    >
       <ChatKit
         key={widgetInstanceKey}
         control={chatkit.control}
