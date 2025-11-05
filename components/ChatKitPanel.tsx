@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatKit, useChatKit } from "@openai/chatkit-react";
+import { sendLeadToMake } from "@/lib/sendLeadToMake";
 import {
   STARTER_PROMPTS,
   PLACEHOLDER_INPUT,
@@ -49,11 +50,14 @@ export function ChatKitPanel({
   onResponseEnd,
   onThemeRequest,
 }: ChatKitPanelProps) {
+  const [leadSent, setLeadSent] = useState(false);
   const processedFacts = useRef(new Set<string>());
   const [errors, setErrors] = useState<ErrorState>(() => createInitialErrors());
   const [isInitializingSession, setIsInitializingSession] = useState(true);
   const isMountedRef = useRef(true);
   const [scriptStatus, setScriptStatus] = useState<
+  const [detectedName, setDetectedName] = useState<string | null>(null);
+  const [detectedPhone, setDetectedPhone] = useState<string | null>(null);
     "pending" | "ready" | "error"
   >(() =>
     isBrowser && window.customElements?.get("openai-chatkit")
@@ -329,7 +333,56 @@ export function ChatKitPanel({
       console.error("ChatKit error", error);
     },
   });
+  // ✅ Add this *right here lead capture begin
+useEffect(() => {
+  if (!chatkit?.thread?.messages) return;
 
+  const lastUserMessage = [...chatkit.thread.messages]
+    .reverse()
+    .find((m) => m?.role === "user" && typeof m.content === "string");
+
+  if (!lastUserMessage) return;
+
+  const text = lastUserMessage.content.trim();
+
+  // 1) Detect Name once
+  if (!detectedName) {
+    const name = detectName(text);
+    if (name) {
+      setDetectedName(name);
+      return;
+    }
+  }
+
+  // 2) Detect Phone once (only after name)
+  if (detectedName && !detectedPhone) {
+    const phone = detectPhone(text);
+    if (phone) {
+      setDetectedPhone(phone);
+      return;
+    }
+  }
+
+  // 3) Detect Specialty only AFTER name + phone
+  if (detectedName && detectedPhone && !leadSent) {
+    const specialty = detectSpecialty(text);
+    if (specialty) {
+      sendLeadToMake({
+        name: detectedName,
+        phone: detectedPhone,
+        specialty,
+      });
+      setLeadSent(true);
+      console.log("✅ Lead sent:", {
+        name: detectedName,
+        phone: detectedPhone,
+        specialty,
+      });
+    }
+  }
+
+}, [chatkit?.thread?.messages, detectedName, detectedPhone, leadSent]);
+//-------------------lead capture effect------------//
   const activeError = errors.session ?? errors.integration;
   const blockingError = errors.script ?? activeError;
 
@@ -366,16 +419,25 @@ export function ChatKitPanel({
       />
     </div>
   );
+  // catch Name phone and clinic type//
+function detectName(text: string): string | null {
+  // Name = letters (Hebrew/English), 1–3 words, no digits
+  if (/^[A-Za-z\u0590-\u05FF]{2,}(?: [A-Za-z\u0590-\u05FF]{2,}){0,2}$/.test(text)) {
+    return text.trim();
+  }
+  return null;
 }
 
-function extractErrorDetail(
-  payload: Record<string, unknown> | undefined,
-  fallback: string
-): string {
-  if (!payload) {
-    return fallback;
-  }
+function detectPhone(text: string): string | null {
+  const match = text.replace(/\D/g, "").match(/(?:972|0)([0-9]{8,9})/);
+  return match ? match[0] : null;
+}
 
+function detectSpecialty(text: string): string | null {
+  // Any meaningful text after name + phone is considered specialty
+  return text.length > 1 ? text.trim() : null;
+}
+  // finish here
   const error = payload.error;
   if (typeof error === "string") {
     return error;
