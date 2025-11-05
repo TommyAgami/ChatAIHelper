@@ -44,7 +44,7 @@ const createInitialErrors = (): ErrorState => ({
   retryable: false,
 });
 
-// 🛠️ Utility functions defined outside the component (Already corrected)
+// Utility functions (defined outside the component)
 
 function detectName(text: string): string | null {
   // Name = letters (Hebrew/English), 1–3 words, no digits
@@ -412,14 +412,16 @@ export function ChatKitPanel({
     },
   });
 
-  // ✅ Lead Capture Effect (Corrected access using type assertion)
+  // ✅ Lead Capture Effect 
   useEffect(() => {
-    // ⚠️ TYPE ASSERTION: Bypasses TypeScript error by assuming 'thread' exists at runtime.
-    // This is often necessary when library types are incomplete.
+    // ⚠️ SUPPRESSION 1: Required because 'thread' is not in the public ChatKitControl type.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const msgs = (chatkit?.control as any)?.thread?.messages; 
     
     if (!msgs || msgs.length === 0) return;
 
+    // ⚠️ SUPPRESSION 2: Required because the message object structure is unknown (m: any).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const lastUserMessage = [...msgs]
       .reverse()
       .find((m: any) => m?.role === "user" && typeof m.content === "string");
@@ -456,7 +458,7 @@ export function ChatKitPanel({
         console.log("✅ Lead Sent", { detectedName, detectedPhone, specialty });
       }
     }
-  }, [chatkit.control, detectedName, detectedPhone, leadSent]); // 💡 Adjusted dependency to only use chatkit.control
+  }, [chatkit.control, detectedName, detectedPhone, leadSent]); 
 
   //-------------------lead capture effect------------//
   const activeError = errors.session ?? errors.integration;
