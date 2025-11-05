@@ -443,6 +443,14 @@ function detectSpecialty(text: string): string | null {
   return text.length > 1 ? text.trim() : null;
 }
   // finish here
+function extractErrorDetail(
+  payload: Record<string, unknown> | undefined,
+  fallback: string
+): string {
+  if (!payload) {
+    return fallback;
+  }
+
   const error = payload.error;
   if (typeof error === "string") {
     return error;
@@ -458,7 +466,7 @@ function detectSpecialty(text: string): string | null {
   }
 
   const details = payload.details;
-  if (typeof details === "string") {
+ 	if (typeof details === "string") {
     return details;
   }
 
