@@ -340,9 +340,9 @@ export function ChatKitPanel({
   });
   // ✅ Add this *right here lead capture begin
 useEffect(() => {
-  if (!chatkit?.thread?.messages) return;
+  if (!chatkit?.session?.messages) return;
 
-  const lastUserMessage = [...chatkit.thread.messages]
+  const lastUserMessage = [...chatkit.session.messages]
     .reverse()
     .find((m) => m?.role === "user" && typeof m.content === "string");
 
