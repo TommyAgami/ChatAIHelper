@@ -273,9 +273,27 @@ export function ChatKitPanel({
   );
 }
 
-function extractErrorDetail(payload: any, fallback: string): string {
+type ErrorPayload = {
+  error?: string | { message?: string };
+  message?: string;
+  details?: unknown;
+};
+
+function extractErrorDetail(payload: ErrorPayload | undefined, fallback: string): string {
   if (!payload) return fallback;
+
   if (typeof payload.error === "string") return payload.error;
-  if (payload.error?.message) return payload.error.message;
+  if (typeof payload.message === "string") return payload.message;
+
+  if (
+    payload.error &&
+    typeof payload.error === "object" &&
+    "message" in payload.error &&
+    typeof payload.error.message === "string"
+  ) {
+    return payload.error.message;
+  }
+
   return fallback;
 }
+
