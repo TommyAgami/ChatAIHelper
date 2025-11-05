@@ -65,20 +65,35 @@ export function ChatKitPanel({
   const setErrorState = useCallback((updates: Partial<ErrorState>) => {
     setErrors((current) => ({ ...current, ...updates }));
   }, []);
-  //------------ATTEMPT TO ADD RIGHT ALIGN-----
-  useEffect(() => {
+//------------ATTEMPT TO ADD RIGHT ALIGN (FIXED)-----
+useEffect(() => {
   const observer = new MutationObserver(() => {
-    const chatEl =
-      document.querySelector('[data-chatkit-root], openai-chatkit, .chat-root');
+    const chatEl = document.querySelector(
+      '[data-chatkit-root], openai-chatkit, .chat-root'
+    ) as HTMLElement | null;
+
     if (chatEl) {
       chatEl.style.textAlign = "right";
-      const input = chatEl.querySelector("input, textarea");
+
+      const input = chatEl.querySelector("input, textarea") as
+        | HTMLInputElement
+        | HTMLTextAreaElement
+        | null;
+
       if (input) {
-        (input as HTMLInputElement).style.textAlign = "right";
+        input.style.textAlign = "right";
       }
     }
   });
-//-------------END OF SECTION TO ADD RIGHT ALIGN------ Tommy.
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+
+  return () => observer.disconnect();
+}, []);
+//-------------END OF SECTION------
   observer.observe(document.body, { childList: true, subtree: true });
   return () => observer.disconnect();
 }, []);
