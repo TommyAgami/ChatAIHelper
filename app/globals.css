@@ -32,7 +32,7 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
-._8q-hD {
+  /*._8q-hD {    <tried this code on CSS comopment , didnt work>
     text-align: right;
     direction: rtl; /* It's also good practice to include this */
-}
+
