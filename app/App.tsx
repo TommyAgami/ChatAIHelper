@@ -323,12 +323,7 @@ export function ChatKitPanel({
 },
   });
 
-  if (isDev) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => {
-      console.debug("[ChatKitPanel] rerendering with options", chatkit.options);
-    }, [chatkit.options]);
-  }
+
 
   const { options, clientSecret } = chatkit;
 
