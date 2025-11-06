@@ -6,7 +6,7 @@ type LeadPayload = {
 
 export async function sendLeadToMake({ name, phone, specialty }: LeadPayload) {
   try {
-    await fetch("https://hook.eu2.make.com/civdi1w15tu7v4ccacd454xyig1xg62m", {
+    await fetch("https://hook.eu2.make.com/udeeqenw67zy3ydgvwuecfsnqca37vym", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
