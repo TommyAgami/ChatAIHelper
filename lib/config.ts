@@ -7,18 +7,18 @@ export const CREATE_SESSION_ENDPOINT = "/api/create-session";
 
 export const STARTER_PROMPTS: StartScreenPrompt[] = [
   {
-    label: "איזה פיצ'רים יש במדפורם",
-    prompt: "מה הפיצ'רים הבולטים שלכם",
+    label: "שאלה לגבי טיפולים",
+    prompt: "שלום, רציתי לשאול לגבי טיפול",
     icon: "circle-question",
   },
   {
-    label: "מעוניין/ת לקבוע הדגמה",
-    prompt: "אני רוצה לקבוע הדגמה בבקשה",
+    label: "מעוניינ/ת לקבוע תור",
+    prompt: "אני רוצה לקבוע תור בבקשה",
     icon: "circle-question",
   },
 ];
 
-export const PLACEHOLDER_INPUT = "כאן לכל שאלה...";
+export const PLACEHOLDER_INPUT = "תשאלו על טיפול או קביעת תור";
 export const GREETING = "AI מדפורם";
 
 /**
