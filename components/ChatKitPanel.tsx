@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatKit, useChatKit } from "@openai/chatkit-react";
-import { sendLeadToMake } from "@/lib/sendLeadToMake";
 import {
   STARTER_PROMPTS,
   PLACEHOLDER_INPUT,
@@ -44,90 +43,12 @@ const createInitialErrors = (): ErrorState => ({
   retryable: false,
 });
 
-// Utility functions (defined outside the component)
-
-function detectName(text: string): string | null {
-  // Name = letters (Hebrew/English), 1–3 words, no digits
-  if (/^[A-Za-z\u0590-\u05FF]{2,}(?: [A-Za-z\u0590-\u05FF]{2,}){0,2}$/.test(text)) {
-    return text.trim();
-  }
-  return null;
-}
-
-function detectPhone(text: string): string | null {
-  // Finds a 9 or 10 digit number possibly prefixed with 972 or 0, ignoring other characters
-  const match = text.replace(/\D/g, "").match(/(?:972|0)?([0-9]{8,10})/); 
-  return match ? match[1] : null; 
-}
-
-function detectSpecialty(text: string): string | null {
-  // Any meaningful text after name + phone is considered specialty
-  return text.length > 1 ? text.trim() : null;
-}
-
-function extractErrorDetail(
-  payload: Record<string, unknown> | undefined,
-  fallback: string
-): string {
-  if (!payload) {
-    return fallback;
-  }
-
-  const error = payload.error;
-  if (typeof error === "string") {
-    return error;
-  }
-
-  if (
-    error &&
-    typeof error === "object" &&
-    "message" in error &&
-    typeof (error as { message?: unknown }).message === "string"
-  ) {
-    return (error as { message: string }).message;
-  }
-
-  const details = payload.details;
-  if (typeof details === "string") {
-    return details;
-  }
-
-  if (details && typeof details === "object" && "error" in details) {
-    const nestedError = (details as { error?: unknown }).error;
-    if (typeof nestedError === "string") {
-      return nestedError;
-    }
-    if (
-      nestedError &&
-      typeof nestedError === "object" &&
-      "message" in nestedError &&
-      typeof (nestedError as { message?: unknown }).message === "string"
-    ) {
-      return (nestedError as { message: string }).message;
-    }
-  }
-  if (typeof payload.message === "string") {
-    return payload.message;
-  }
-
-  return fallback;
-}
-
-// -------------------------------------------------------------
-// Component Definition
-// -------------------------------------------------------------
-
 export function ChatKitPanel({
   theme,
   onWidgetAction,
   onResponseEnd,
   onThemeRequest,
 }: ChatKitPanelProps) {
-
-  // The lead capture states (detectedName, detectedPhone, leadSent) are removed
-  // as the Agent's function calling logic replaces the manual parsing.
-
-  // ✅ Existing states remain unchanged
   const processedFacts = useRef(new Set<string>());
   const [errors, setErrors] = useState<ErrorState>(() => createInitialErrors());
   const [isInitializingSession, setIsInitializingSession] = useState(true);
@@ -139,7 +60,6 @@ export function ChatKitPanel({
       ? "ready"
       : "pending"
   );
-
   const [widgetInstanceKey, setWidgetInstanceKey] = useState(0);
 
   const setErrorState = useCallback((updates: Partial<ErrorState>) => {
@@ -361,28 +281,10 @@ export function ChatKitPanel({
     threadItemActions: {
       feedback: false,
     },
-    // 🔥 CORRECTED: Single, unified onClientTool handler
     onClientTool: async (invocation: {
       name: string;
       params: Record<string, unknown>;
     }) => {
-
-      // 1. LEAD CAPTURE TOOL (New Logic)
-      if (invocation.name === "send_lead_to_make") {
-        const { name, phone, specialty } = invocation.params;
-
-        if (name && phone && specialty) {
-          void sendLeadToMake({
-            name: String(name),
-            phone: String(phone),
-            specialty: String(specialty),
-          });
-          return { success: true }; 
-        }
-        return { success: false }; 
-      }
-
-      // 2. SWITCH THEME TOOL (Existing Logic)
       if (invocation.name === "switch_theme") {
         const requested = invocation.params.theme;
         if (requested === "light" || requested === "dark") {
@@ -395,7 +297,6 @@ export function ChatKitPanel({
         return { success: false };
       }
 
-      // 3. RECORD FACT TOOL (Existing Logic)
       if (invocation.name === "record_fact") {
         const id = String(invocation.params.fact_id ?? "");
         const text = String(invocation.params.fact_text ?? "");
@@ -411,11 +312,8 @@ export function ChatKitPanel({
         return { success: true };
       }
 
-      // Default return if no known function was called
       return { success: false };
     },
-    // End of onClientTool
-    
     onResponseEnd: () => {
       onResponseEnd();
     },
@@ -431,9 +329,7 @@ export function ChatKitPanel({
       console.error("ChatKit error", error);
     },
   });
-  // 🗑️ The old manual lead capture useEffect has been removed!
 
-  //-------------------lead capture effect------------//
   const activeError = errors.session ?? errors.integration;
   const blockingError = errors.script ?? activeError;
 
@@ -470,4 +366,53 @@ export function ChatKitPanel({
       />
     </div>
   );
+}
+
+function extractErrorDetail(
+  payload: Record<string, unknown> | undefined,
+  fallback: string
+): string {
+  if (!payload) {
+    return fallback;
+  }
+
+  const error = payload.error;
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+
+  const details = payload.details;
+  if (typeof details === "string") {
+    return details;
+  }
+
+  if (details && typeof details === "object" && "error" in details) {
+    const nestedError = (details as { error?: unknown }).error;
+    if (typeof nestedError === "string") {
+      return nestedError;
+    }
+    if (
+      nestedError &&
+      typeof nestedError === "object" &&
+      "message" in nestedError &&
+      typeof (nestedError as { message?: unknown }).message === "string"
+    ) {
+      return (nestedError as { message: string }).message;
+    }
+  }
+
+  if (typeof payload.message === "string") {
+    return payload.message;
+  }
+
+  return fallback;
 }
